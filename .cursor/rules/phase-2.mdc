@@ -1,0 +1,35 @@
+---
+description: ScholarPath Phase 2 scope — Intelligence Layer
+alwaysApply: false
+---
+
+# ScholarPath — Phase 2 Rules
+
+## Scope Guard
+
+Phase 2 — Intelligence Layer. Build:
+- Rule-based filtering engine (field, year, GPA)
+- AI ranking via Claude API (with rule-based fallback)
+- Per-user recommendation system
+- Profile summarization for AI prompts
+
+Do NOT implement yet:
+- Motivation letter generation (Phase 3)
+- Email or in-app notifications (Phase 4)
+- Community, scraping, career module (Phase 5)
+
+## AI Constraints
+
+- AI is stateless — no direct DB writes from Claude
+- Backend stores recommendations after AI/ranking pipeline
+- System must work without `ANTHROPIC_API_KEY` (rule-based fallback)
+
+## New Modules
+
+- `MatchingModule` — rule filter + recommendation orchestration
+- `AiModule` — Claude ranking + profile summarization
+
+## Exit Criteria
+
+- Each user sees personalized scholarship rankings
+- AI improves relevance over basic filtering when API key is set

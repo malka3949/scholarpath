@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum ApplicationStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+}
+
+enum NotificationType {
+  DEADLINE_APPROACHING
+  APPLICATION_STATUS
+  SYSTEM
+}
+
+enum ScholarshipSource {
+  SEED
+  ADMIN
+  IMPORTED
+}
+
+enum ScholarshipEventType {
+  VIEW
+  APPLY_START
+}
+
+model User {
+  id                        String   @id @default(cuid())
+  email                     String   @unique
+  passwordHash              String?  @map("password_hash")
+  name                      String?
+  role                      Role     @default(STUDENT)
+  googleId                  String?  @unique @map("google_id")
+  emailNotificationsEnabled Boolean  @default(true) @map("email_notifications_enabled")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  profile         StudentProfile?
+  applications    Application[]
+  recommendations Recommendation[]
+  notifications     Notification[]
+  scholarshipEvents ScholarshipEvent[]
+  communityPosts    CommunityPost[]
+  communityComments CommunityComment[]
+
+  @@map("users")
+}
+
+model StudentProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fieldOfStudy String?  @map("field_of_study")
+  year         Int?
+  gpa          Float?
+  preferences  Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("student_profiles")
+}
+
+model Scholarship {
+  id               String    @id @default(cuid())
+  title            String
+  description      String
+  eligibilityRules Json?     @map("eligibility_rules")
+  deadline         DateTime?
+  sourceUrl        String?   @map("source_url")
+  tags             String[]
+  source           ScholarshipSource @default(SEED)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  applications      Application[]
+  recommendations   Recommendation[]
+  notifications     Notification[]
+  scholarshipEvents ScholarshipEvent[]
+
+  @@map("scholarships")
+}
+
+model Recommendation {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scholarshipId String   @map("scholarship_id")
+  scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  score         Float
+  matchReason   String?  @map("match_reason")
+  computedAt    DateTime @default(now()) @map("computed_at")
+
+  @@unique([userId, scholarshipId])
+  @@index([userId, score(sort: Desc)])
+  @@map("recommendations")
+}
+
+model Application {
+  id               String            @id @default(cuid())
+  userId           String            @map("user_id")
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scholarshipId    String            @map("scholarship_id")
+  scholarship      Scholarship       @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  status           ApplicationStatus @default(NOT_STARTED)
+  motivationLetter String?           @map("motivation_letter")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  notifications    Notification[]
+
+  @@unique([userId, scholarshipId])
+  @@map("applications")
+}
+
+model Notification {
+  id            String           @id @default(cuid())
+  userId        String           @map("user_id")
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          NotificationType
+  title         String
+  body          String
+  readAt        DateTime?        @map("read_at")
+  scholarshipId String?          @map("scholarship_id")
+  scholarship   Scholarship?     @relation(fields: [scholarshipId], references: [id], onDelete: SetNull)
+  applicationId String?          @map("application_id")
+  application   Application?     @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  emailSentAt   DateTime?        @map("email_sent_at")
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  @@unique([userId, type, applicationId], name: "notification_dedupe_app")
+  @@index([userId, readAt])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model ScholarshipEvent {
+  id            String               @id @default(cuid())
+  userId        String               @map("user_id")
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scholarshipId String               @map("scholarship_id")
+  scholarship   Scholarship          @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  eventType     ScholarshipEventType @map("event_type")
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  @@index([userId, scholarshipId, createdAt])
+  @@map("scholarship_events")
+}
+
+model CommunityPost {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  comments  CommunityComment[]
+
+  @@index([createdAt(sort: Desc)])
+  @@map("community_posts")
+}
+
+model CommunityComment {
+  id        String             @id @default(cuid())
+  postId    String             @map("post_id")
+  post      CommunityPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String             @map("user_id")
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  String?            @map("parent_id")
+  parent    CommunityComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   CommunityComment[] @relation("CommentReplies")
+  body      String
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  @@index([postId, createdAt])
+  @@index([postId, parentId, createdAt])
+  @@map("community_comments")
+}

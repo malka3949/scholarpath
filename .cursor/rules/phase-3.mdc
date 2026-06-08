@@ -1,0 +1,30 @@
+---
+description: ScholarPath Phase 3 scope — AI Workflow Layer
+alwaysApply: false
+---
+
+# ScholarPath — Phase 3 Rules
+
+## Scope Guard
+
+Phase 3 — AI Workflow Layer. Build:
+- Motivation letter generator (Claude + template fallback)
+- Application workflow UI (`/applications/[id]`)
+- Draft saving and editing
+- Letters linked to applications via `motivationLetter` field
+
+Do NOT implement yet:
+- Email or in-app notifications (Phase 4)
+- Community, scraping, career module (Phase 5)
+
+## AI Constraints
+
+- AI generates content only — backend persists to DB
+- User initiates generation (`POST /applications/:id/generate-letter`)
+- User controls status transitions
+- Require motivation letter before SUBMITTED status
+
+## Exit Criteria
+
+- Users generate and edit full motivation letters
+- Letters are attached to applications

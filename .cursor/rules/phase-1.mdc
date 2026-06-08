@@ -1,0 +1,39 @@
+---
+description: ScholarPath Phase 1 scope, stack, and coding constraints
+alwaysApply: false
+---
+
+# ScholarPath — Phase 1 Rules
+
+## Scope Guard
+
+Phase 1 only. Do NOT implement:
+- AI / Claude API / recommendations / motivation letter generation
+- Email or in-app notifications
+- Community (posts, comments, forum)
+- Career opportunities module
+- Scraping or data automation
+
+## Stack
+
+- Monorepo: Turborepo (`apps/web`, `apps/api`)
+- Frontend: Next.js App Router, Hebrew UI
+- Backend: NestJS + Prisma + PostgreSQL
+- Auth: NextAuth (email + Google OAuth)
+
+## Code Conventions
+
+- TypeScript strict; DTOs with class-validator
+- Hebrew in UI strings; English in code and comments
+- PostgreSQL is source of truth — AI never writes to DB (future phases)
+- NestJS modules: Auth, Student, Scholarship, Application, Admin
+
+## Application States
+
+`NOT_STARTED → IN_PROGRESS → SUBMITTED → ACCEPTED | REJECTED`
+
+User-initiated transitions only.
+
+## Before Adding Features
+
+Check `AGENTS.md` and `DOCS/scholar_path_phases_plan_v_0.md` for current phase scope.

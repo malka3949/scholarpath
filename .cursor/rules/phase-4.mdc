@@ -1,0 +1,10 @@
+---
+description: ScholarPath Phase 4 — Retention Layer (completed)
+alwaysApply: false
+---
+
+# ScholarPath — Phase 4 Rules (completed)
+
+Phase 4 delivered in-app notifications. See `team-Yuri/dev-phase4.md`.
+
+Do not re-implement unless fixing bugs. Next work: Phase 5 per `team-Yuri/plan.md`.

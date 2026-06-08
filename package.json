@@ -1,0 +1,23 @@
+{
+  "name": "scholarpath",
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "db:generate": "npx prisma generate --schema=packages/database/prisma/schema.prisma",
+    "db:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-postgres.ps1",
+    "db:migrate": "npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma",
+    "db:migrate:dev": "npx prisma migrate dev --schema=packages/database/prisma/schema.prisma",
+    "db:seed": "npm run seed -w @scholarpath/database",
+    "db:push": "npx prisma db push --schema=packages/database/prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  }
+}
