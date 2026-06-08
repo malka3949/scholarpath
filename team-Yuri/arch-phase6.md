@@ -4,7 +4,7 @@
 PHASE=6
 
 ## Status
-STATUS: READY_FOR_MANAGER
+STATUS: APPROVED
 
 ## Phase Goal
 Deliver **Delivery & Alerts**: outbound email for existing notification types and a **daily scheduled** deadline sync so students receive reminders without opening the app—closing the gap vs `DOCS/scholar_path_architecture_plan_v_0.md` §10 while preserving all Phase 1–5 behavior.
@@ -164,10 +164,20 @@ Break into milestones (suggested M1–M7):
 **Credentials for E2E:** `student@scholarpath.local`, `admin@scholarpath.local` (existing seed).
 
 ## Architect Review
-ARCHITECT_REVIEW_STATUS: NOT_REVIEWED
+ARCHITECT_REVIEW_STATUS: APPROVED
 
 ### Review Notes
-Pending Phase 6 implementation.
+- Phase identifier aligned: `PHASE=6` across PHASE.md, arch-phase6.md, manager-phase6.md, dev-phase6.md.
+- All manager milestones M1–M7 marked complete in dev-phase6 with file/module evidence.
+- Architecture honored: `NotificationModule` extended (no new top-level module); `MailService` with `resend` / `smtp` / `log` providers and `MAIL_ENABLED` gate; email only for `DEADLINE_APPROACHING` and `APPLICATION_STATUS`; `emailSentAt` idempotency; `User.emailNotificationsEnabled` opt-out (in-app always on); `DeadlineSyncScheduler` daily cron calling `syncDeadlineNotificationsForAllStudents()`; profile GET/PUT + `/profile` Hebrew toggle.
+- Out of scope verified: no `IngestionJob`, scraper, push, or "new recommendations" email code under `apps/`.
+- API surface unchanged except profile preference fields; admin sync endpoint reused for cron-equivalent E2E.
+- Unit tests: 19/19 PASS per dev-phase6 (mail, notification opt-out/idempotency, scheduler, Phase 5 regression suites).
+- Lint: NOT AVAILABLE — documented; acceptable per Phases 4–5 and `20-testing.md`.
+- Functional evidence: dev-phase6 documents E2E path, MailService log sample, cron manual substitute via `POST /admin/notifications/sync-deadlines`. Manual full E2E recommended but not blocking (same bar as Phase 5).
+- Phases 1–5 contracts preserved: application state machine unchanged; dedupe and 7-day window unchanged; AI does not send mail or schedule jobs.
+- Known limitations acceptable: Windows `db:generate` EPERM when API locks Prisma DLL; optional `/notifications` email note not implemented (Manager nice-to-have).
+- Process note at review time: `manager-phase6.md` `MANAGER_REVIEW_STATUS` was still `NOT_REVIEWED`; run Manager review for dual sign-off before Phase 7 planning.
 
 ### Required Corrections
-None at architecture design stage.
+None. Phase 6 approved for architecture closure. Delivery & Alerts gap vs architecture plan §10 (email + scheduled deadline sync) is satisfied at MVP scope; "new recommendations" email remains deferred per phase boundaries.

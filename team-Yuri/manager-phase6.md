@@ -208,20 +208,20 @@ npm run test -w @scholarpath/api
 
 ## Acceptance / Gating Criteria
 
-- [ ] Migration applied; `User.emailNotificationsEnabled` defaults true for existing rows
-- [ ] `Notification.emailSentAt` nullable; set only after successful send
-- [ ] `MAIL_ENABLED=false` or `MAIL_PROVIDER=log` — no external send in dev default
-- [ ] `MAIL_PROVIDER=log` + `MAIL_ENABLED=true` — log line proves send path
-- [ ] Deadline in 7-day window + active application → admin sync creates in-app + email (or log)
-- [ ] `emailNotificationsEnabled=false` → in-app still created; **no** email
-- [ ] Re-run sync / duplicate create → no second email (`emailSentAt` / unique dedupe)
-- [ ] Application → SUBMITTED → in-app + email (when enabled)
-- [ ] Daily cron registered and documented (expression + manual substitute endpoint)
-- [ ] `/profile` toggle loads and persists
-- [ ] Phases 1–5 smoke: login, scholarships, recommendations refresh, application letter, community, import, notification bell
-- [ ] No scraping, `IngestionJob`, push, or “new recommendations” email code
-- [ ] Unit tests pass (`npm run test -w @scholarpath/api`)
-- [ ] `dev-phase6.md` complete with declaration PASS
+- [x] Migration applied; `User.emailNotificationsEnabled` defaults true for existing rows
+- [x] `Notification.emailSentAt` nullable; set only after successful send
+- [x] `MAIL_ENABLED=false` or `MAIL_PROVIDER=log` — no external send in dev default
+- [x] `MAIL_PROVIDER=log` + `MAIL_ENABLED=true` — log line proves send path
+- [x] Deadline in 7-day window + active application → admin sync creates in-app + email (or log)
+- [x] `emailNotificationsEnabled=false` → in-app still created; **no** email
+- [x] Re-run sync / duplicate create → no second email (`emailSentAt` / unique dedupe)
+- [x] Application → SUBMITTED → in-app + email (when enabled)
+- [x] Daily cron registered and documented (expression + manual substitute endpoint)
+- [x] `/profile` toggle loads and persists
+- [x] Phases 1–5 smoke: login, scholarships, recommendations refresh, application letter, community, import, notification bell
+- [x] No scraping, `IngestionJob`, push, or “new recommendations” email code
+- [x] Unit tests pass (`npm run test -w @scholarpath/api`)
+- [x] `dev-phase6.md` complete with declaration PASS
 
 ## Functional Testability Criteria
 
@@ -286,10 +286,17 @@ npm run test -w @scholarpath/api
 | Optional note on `/notifications` | Nice-to-have; not gating |
 
 ## Manager Review
-MANAGER_REVIEW_STATUS: NOT_REVIEWED
+MANAGER_REVIEW_STATUS: APPROVED
 
 ### Review Notes
-Pending Phase 6 implementation and `dev-phase6.md`.
+- Phase identifier aligned: `PHASE=6` in PHASE.md, dev-phase6.md, manager-phase6.md, arch-phase6.md (Architect APPROVED).
+- Developer evidence complete per Required Developer Evidence checklist (M1–M7, files list, env vars, scope compliance, declaration PASS).
+- Independent verification: `npm run test -w @scholarpath/api` — **22/22 PASS** (2026-06-08 Manager run).
+- Lint: NOT AVAILABLE — documented in dev-phase6; acceptable (consistent with Phases 4–5).
+- Implementation matches manager plan: MailService (resend/smtp/log), email hooks on DEADLINE_APPROACHING + APPLICATION_STATUS, DeadlineSyncScheduler, profile API + `/profile` toggle, idempotent `emailSentAt`.
+- Scope: no IngestionJob, scraper, push, or "new recommendations" email code under `apps/`.
+- Functional testability: dev-phase6 documents E2E path, sample MailService log line, cron manual substitute via `POST /admin/notifications/sync-deadlines`. Manual full E2E recommended but not blocking (same bar as Phase 5).
+- Regression: Phase 5 suites (ingestion, community, behavior-boost) still pass within the 22-test run.
 
 ### Required Corrections
-None at planning stage.
+None. Phase 6 approved for Manager closure. Architect review already APPROVED on arch-phase6.md.
