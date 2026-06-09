@@ -1,12 +1,16 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ScholarshipEventType } from '@scholarpath/database';
 import { PrismaService } from '../prisma/prisma.module';
+import { ActionService } from '../action/action.service';
 
 @Injectable()
 export class EventsService {
   private readonly logger = new Logger(EventsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly actionService: ActionService,
+  ) {}
 
   async recordEvent(
     userId: string,
@@ -23,6 +27,8 @@ export class EventsService {
     await this.prisma.scholarshipEvent.create({
       data: { userId, scholarshipId, eventType },
     });
+
+    this.actionService.scheduleRegenerate(userId);
 
     return { ok: true };
   }

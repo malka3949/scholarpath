@@ -11,6 +11,7 @@ import { NotificationModule } from './notification/notification.module';
 import { IngestionModule } from './ingestion/ingestion.module';
 import { EventsModule } from './events/events.module';
 import { CommunityModule } from './community/community.module';
+import { ActionModule } from './action/action.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CommunityModule } from './community/community.module';
     IngestionModule,
     EventsModule,
     CommunityModule,
+    ActionModule,
   ],
 })
 export class AppModule {}

@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.module';
 import { STATUS_LABELS } from '../application/application-state.machine';
 import { MailService } from './mail.service';
+import { ActionService } from '../action/action.service';
 
 const DEADLINE_WINDOW_DAYS = 7;
 const ACTIVE_STATUSES: ApplicationStatus[] = [
@@ -27,6 +28,7 @@ export class NotificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
+    private readonly actionService: ActionService,
   ) {}
 
   async findAllForUser(userId: string) {
@@ -34,6 +36,7 @@ export class NotificationService {
       where: { userId },
       include: {
         scholarship: { select: { id: true, title: true, deadline: true } },
+        application: { select: { status: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -52,6 +55,7 @@ export class NotificationService {
       where: { id: notificationId, userId },
       include: {
         scholarship: { select: { id: true, title: true, deadline: true } },
+        application: { select: { status: true } },
       },
     });
     if (!existing) {
@@ -62,6 +66,7 @@ export class NotificationService {
       data: { readAt: new Date() },
       include: {
         scholarship: { select: { id: true, title: true, deadline: true } },
+        application: { select: { status: true } },
       },
     });
     return this.toItem(updated);
@@ -118,8 +123,16 @@ export class NotificationService {
       select: { id: true },
     });
     let total = 0;
+    const affectedUserIds: string[] = [];
     for (const student of students) {
-      total += await this.syncDeadlineNotifications(student.id);
+      const created = await this.syncDeadlineNotifications(student.id);
+      total += created;
+      if (created > 0) {
+        affectedUserIds.push(student.id);
+      }
+    }
+    for (const userId of affectedUserIds) {
+      this.actionService.scheduleRegenerate(userId);
     }
     return total;
   }
@@ -224,6 +237,7 @@ export class NotificationService {
     applicationId: string | null;
     createdAt: Date;
     scholarship?: { id: string; title: string; deadline: Date | null } | null;
+    application?: { status: ApplicationStatus } | null;
   }) {
     return {
       id: row.id,
@@ -233,6 +247,7 @@ export class NotificationService {
       readAt: row.readAt?.toISOString() ?? null,
       scholarshipId: row.scholarshipId,
       applicationId: row.applicationId,
+      applicationStatus: row.application?.status ?? null,
       createdAt: row.createdAt.toISOString(),
       scholarship: row.scholarship
         ? {

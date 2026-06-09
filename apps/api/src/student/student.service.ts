@@ -2,10 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.module';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ActionService } from '../action/action.service';
 
 @Injectable()
 export class StudentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly actionService: ActionService,
+  ) {}
 
   async getProfile(userId: string) {
     const profile = await this.prisma.studentProfile.findUnique({
@@ -56,6 +60,8 @@ export class StudentService {
       where: { id: userId },
       select: { emailNotificationsEnabled: true },
     });
+
+    this.actionService.scheduleRegenerate(userId);
 
     return {
       ...profile,

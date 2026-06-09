@@ -7,6 +7,7 @@ import {
   getApplications,
   getRecommendations,
   refreshRecommendations,
+  isScholarshipDeadlineOpen,
   STATUS_LABELS,
   type Application,
   type ApplicationStatus,
@@ -21,12 +22,15 @@ const TERMINAL_STATUSES: ApplicationStatus[] = [
 
 function RecommendationActions({
   scholarshipId,
+  deadline,
   application,
 }: {
   scholarshipId: string;
+  deadline: string | null | undefined;
   application?: Application;
 }) {
   const detailsHref = `/scholarships/${scholarshipId}`;
+  const canApply = isScholarshipDeadlineOpen(deadline);
 
   if (!application) {
     return (
@@ -37,12 +41,14 @@ function RecommendationActions({
         >
           פרטים
         </Link>
-        <Link
-          href={`${detailsHref}?track=1`}
-          className="text-sm font-medium text-cta-dark hover:underline"
-        >
-          הוסף למעקב
-        </Link>
+        {canApply && (
+          <Link
+            href={`${detailsHref}?track=1`}
+            className="text-sm font-medium text-cta-dark hover:underline"
+          >
+            הוסף למעקב
+          </Link>
+        )}
       </div>
     );
   }
@@ -236,6 +242,7 @@ export default function RecommendationsPage() {
               )}
               <RecommendationActions
                 scholarshipId={item.scholarship.id}
+                deadline={item.scholarship.deadline}
                 application={applicationsByScholarship.get(item.scholarship.id)}
               />
             </div>

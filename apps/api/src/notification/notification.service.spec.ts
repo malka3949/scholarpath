@@ -45,6 +45,7 @@ describe('NotificationService', () => {
     service = new NotificationService(
       prisma as unknown as PrismaService,
       mailService as unknown as MailService,
+      { scheduleRegenerate: jest.fn() } as unknown as import('../action/action.service').ActionService,
     );
   });
 

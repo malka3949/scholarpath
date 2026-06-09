@@ -21,6 +21,7 @@ export default withAuth(
           '/admin',
           '/recommendations',
           '/notifications',
+          '/dashboard',
         ];
         if (protectedPaths.some((p) => path.startsWith(p))) {
           return !!token;
@@ -40,5 +41,7 @@ export const config = {
     '/recommendations/:path*',
     '/notifications',
     '/notifications/:path*',
+    '/dashboard',
+    '/dashboard/:path*',
   ],
 };

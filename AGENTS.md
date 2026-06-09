@@ -15,31 +15,27 @@ Architecture: modular monolith — Next.js frontend, NestJS backend, PostgreSQL 
 | Auth | NextAuth (email + Google OAuth) |
 | AI | Claude API (optional, template fallback) |
 
-## Current Phase: 6 — Delivery & Alerts (complete)
+## Current Phase: 8 — Action Engine v3 Alignment (complete)
 
-**Goal:** Email for deadline + SUBMITTED alerts; daily cron for deadline sync.
+**Goal:** Harden Action Engine per Architecture v3 — expiration, OPPORTUNITY_ACTION, priority-v2, paginated API, View All.
 
-### Delivered (Phase 6)
+### Delivered (Phase 8)
 
-- `MailService` — `MAIL_PROVIDER=resend|smtp|log`, `MAIL_ENABLED` gate
-- Email after `DEADLINE_APPROACHING` and `APPLICATION_STATUS` (in-app row always created)
-- `User.emailNotificationsEnabled` + `Notification.emailSentAt`
-- `DeadlineSyncScheduler` — daily cron (`CRON_DEADLINE_SYNC` optional)
-- `/profile` — "קבל התראות במייל" toggle
-- Manual bulk sync: `POST /admin/notifications/sync-deadlines` (unchanged)
+- `EXPIRED` status + expiration rules (`ActionExpirationService`)
+- `OPPORTUNITY_ACTION` (score ≥80) with scholarship-type exclusivity
+- Hybrid scoring priority-v2 + env weights + tie-breaker
+- `sourceEventId`, `priorityVersion` traceability
+- `GET /actions` filter, sort, pagination (`total`, `limit`, `offset`)
+- `ActionReconciliationScheduler` daily cron
+- `/dashboard/actions` View All + "הצג הכל" link
 
-### Prior phases (1–5)
+### Prior (Phase 7 MVP)
 
-Growth, retention, applications, recommendations, auth — see `DOCS/PROGRESS.md`.
+ActionModule, `/dashboard`, regenerate hooks — see `dev-phase7.md`.
 
-### Next (Phase 7+ — backlog)
+### Next (Phase 9 — backlog)
 
-- Real data pipeline (controlled ingestion)
-- See `DOCS/scholar_path_phases_plan_v_0.md` v0.2
-
-### Out of Scope (Phases 1–6)
-
-- Autonomous scraping, `IngestionJob` table (Phase 7+ backlog)
+- External Integration Layer — see `team-Yuri/plan.md`
 
 ## Application State Machine
 
@@ -53,7 +49,7 @@ NOT_STARTED → IN_PROGRESS → SUBMITTED → ACCEPTED | REJECTED
 
 ## Backend Modules
 
-Auth, Student, Scholarship, Application, Admin, Matching, AI, Notification (MailService, cron), Ingestion, Events, Community
+Auth, Student, Scholarship, Application, Admin, Matching, AI, Notification (MailService, cron), Action (Action Engine), Ingestion, Events, Community
 
 ## Commands
 

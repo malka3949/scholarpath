@@ -8,6 +8,7 @@ import {
   apiFetch,
   recordScholarshipEvent,
   startApplicationWorkflow,
+  isScholarshipDeadlineOpen,
   type Scholarship,
 } from '@/lib/api';
 
@@ -42,14 +43,18 @@ export default function ScholarshipDetailPage() {
   }, [id, session?.accessToken]);
 
   useEffect(() => {
-    if (shouldStart && session?.accessToken) {
+    if (shouldStart && session?.accessToken && scholarship && isScholarshipDeadlineOpen(scholarship.deadline)) {
       handleStartWorkflow();
     }
-  }, [shouldStart, session?.accessToken]);
+  }, [shouldStart, session?.accessToken, scholarship]);
 
   async function handleStartWorkflow() {
     if (!session?.accessToken) {
       router.push('/login');
+      return;
+    }
+    if (scholarship && !isScholarshipDeadlineOpen(scholarship.deadline)) {
+      setError('המועד האחרון להגשת בקשה למלגה זו עבר');
       return;
     }
     setWorking(true);
@@ -77,6 +82,8 @@ export default function ScholarshipDetailPage() {
     );
   }
 
+  const canApply = isScholarshipDeadlineOpen(scholarship.deadline);
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <Link href="/scholarships" className="text-sm font-medium text-primary hover:underline">
@@ -88,8 +95,11 @@ export default function ScholarshipDetailPage() {
         <p className="leading-relaxed text-slate-600">{scholarship.description}</p>
 
         {scholarship.deadline && (
-          <p className="text-sm font-medium text-amber-700">
-            מועד אחרון: {new Date(scholarship.deadline).toLocaleDateString('he-IL')}
+          <p
+            className={`text-sm font-medium ${canApply ? 'text-amber-700' : 'text-red-700'}`}
+          >
+            {canApply ? 'מועד אחרון: ' : 'המועד האחרון עבר: '}
+            {new Date(scholarship.deadline).toLocaleDateString('he-IL')}
           </p>
         )}
 
@@ -120,13 +130,19 @@ export default function ScholarshipDetailPage() {
 
       <div className="flex flex-wrap gap-3">
         {session ? (
-          <button
-            onClick={handleStartWorkflow}
-            disabled={working}
-            className="sp-btn-cta disabled:opacity-50"
-          >
-            {working ? 'פותח בקשה...' : 'התחל בקשה + מכתב מוטיבציה'}
-          </button>
+          canApply ? (
+            <button
+              onClick={handleStartWorkflow}
+              disabled={working}
+              className="sp-btn-cta disabled:opacity-50"
+            >
+              {working ? 'פותח בקשה...' : 'התחל בקשה + מכתב מוטיבציה'}
+            </button>
+          ) : (
+            <p className="rounded-lg bg-slate-100 px-4 py-2 text-sm text-slate-600">
+              לא ניתן להגיש בקשה — המועד האחרון עבר
+            </p>
+          )
         ) : (
           <Link href="/login" className="sp-btn-primary">
             התחבר כדי להתחיל בקשה

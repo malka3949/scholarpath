@@ -9,6 +9,7 @@ import { RuleFilterService } from './rule-filter.service';
 import { ProfileSummarizerService } from '../ai/profile-summarizer.service';
 import { ClaudeService } from '../ai/claude.service';
 import { BehaviorBoostService } from './behavior-boost.service';
+import { ActionService } from '../action/action.service';
 
 @Injectable()
 export class MatchingService {
@@ -19,6 +20,7 @@ export class MatchingService {
     private readonly profileSummarizer: ProfileSummarizerService,
     private readonly claude: ClaudeService,
     private readonly behaviorBoost: BehaviorBoostService,
+    private readonly actionService: ActionService,
   ) {}
 
   async getRecommendations(userId: string) {
@@ -119,6 +121,8 @@ export class MatchingService {
       include: { scholarship: true },
       orderBy: { score: 'desc' },
     });
+
+    this.actionService.scheduleRegenerate(userId);
 
     return {
       source: this.claude.isAvailable() ? 'ai' : 'rules',

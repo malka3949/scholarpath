@@ -9,10 +9,12 @@ import {
   generateMotivationLetter,
   getApplication,
   saveMotivationLetter,
+  getAvailableNextStatuses,
+  isScholarshipDeadlineOpen,
   type Application,
   type ApplicationStatus,
   STATUS_LABELS,
-  NEXT_STATUS,
+  type ApplicationStatus,
 } from '@/lib/api';
 
 export default function ApplicationWorkflowPage() {
@@ -133,13 +135,22 @@ export default function ApplicationWorkflowPage() {
     );
   }
 
-  const nextStatuses = NEXT_STATUS[application.status] ?? [];
+  const nextStatuses = getAvailableNextStatuses(
+    application.status,
+    application.scholarship.deadline,
+  );
+  const deadlineClosed = !isScholarshipDeadlineOpen(application.scholarship.deadline);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link href="/applications" className="text-sm font-medium text-primary hover:underline">
-        ← חזרה לבקשות שלי
-      </Link>
+      <div className="flex flex-wrap gap-4">
+        <Link href="/scholarships" className="text-sm font-medium text-primary hover:underline">
+          ← חזרה למלגות
+        </Link>
+        <Link href="/applications" className="text-sm font-medium text-primary hover:underline">
+          ← חזרה לבקשות שלי
+        </Link>
+      </div>
 
       <div className="sp-card space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -212,6 +223,14 @@ export default function ApplicationWorkflowPage() {
         />
         <p className="text-xs text-slate-500">{letter.length} תווים</p>
       </section>
+
+      {deadlineClosed &&
+        (application.status === 'IN_PROGRESS' ||
+          application.status === 'NOT_STARTED') && (
+          <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+            המועד האחרון להגשה עבר — לא ניתן לסמן את הבקשה כהוגשה
+          </p>
+        )}
 
       {nextStatuses.length > 0 && (
         <section className="sp-card flex flex-wrap items-center gap-3">

@@ -5,5 +5,8 @@ export {
   NotificationType,
   ScholarshipSource,
   ScholarshipEventType,
+  UserActionType,
+  UserActionStatus,
+  RelatedEntityType,
 } from '@prisma/client';
-export type { User, StudentProfile, Scholarship, Application } from '@prisma/client';
+export type { User, StudentProfile, Scholarship, Application, UserAction } from '@prisma/client';

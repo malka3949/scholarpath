@@ -1,7 +1,22 @@
 # Team Yuri Architecture Plan
 
 ## Document Status
-STATUS: APPROVED
+STATUS: APPROVED (v3 realignment 2026-06-09)
+
+## v3 Phase Mapping (Canonical Product Model)
+
+Team Yuri execution phases align to **`DOCS/prd/scholar_path_prd_v3.md`** and **`DOCS/architecture/ScholarPath – Architecture Plan v3`**:
+
+| v3 Phase | Layer | Team Yuri execution | Status |
+|---|---|---|---|
+| 1–6 | Foundation → Workflow | Phases 1–6 (MVP → Delivery & Alerts) | COMPLETE |
+| **7** | Insight — Recommendation Engine | Phase 2 (Intelligence) + Matching | COMPLETE (retroactive) |
+| **8** | Decision — Action Engine | Phase 7 MVP + **Phase 8 hardening** | MVP COMPLETE → **Phase 8 next** |
+| **9** | Expansion — External Integration | Phase 9 (was “Real Data Pipeline” backlog) | BACKLOG |
+
+**Rule (v3):** Only the Action Engine defines user prioritization. Recommendations are signals only. See `DOCS/engineering/agent-guides/scholarpath-agent-implementation-guide-v1.md`.
+
+**Legacy references:** v1/v2 PRD and architecture remain historical; v3 + `DOCS/Phases/phase_8_action_engine_dd.md` govern Phases 8+.
 
 ## Project Objective
 ScholarPath helps CS and Engineering students in Israel discover scholarships, receive personalized recommendations, draft motivation letters with AI assistance, and track application status through a governed modular monolith (Next.js + NestJS + PostgreSQL).
@@ -61,7 +76,7 @@ ScholarPath helps CS and Engineering students in Israel discover scholarships, r
 
 | Risk | Impact | Mitigation | Owner / Artifact |
 |---|---|---|---|
-| Demo scholarship data confuses users | Trust | Document in README/plan; Phase 5 scraping | plan.md |
+| Demo scholarship data confuses users | Trust | Document in README/plan; Real Data Pipeline in Phase 8 | plan.md |
 | PostgreSQL setup friction | Blocked dev | `DOCS/POSTGRESQL_SETUP.md`, `db:setup` script | dev-phase docs |
 | AI cost/latency | Poor UX | Optional key, fallbacks, user-initiated generation | arch-phase2/3 |
 | No tests in repo yet | Regression | Phase 4+ Developer must add tests per `20-testing.md` | dev-phase4.md |
@@ -220,38 +235,111 @@ Import visible with `מיובא`; community thread; boosted recommendation after
 
 ---
 
-## Phase 6: Delivery & Alerts — PLANNED (next)
+## Phase 6: Delivery & Alerts — COMPLETE
 
 ### Goal
-Email notifications + scheduled deadline sync; align with `DOCS/scholar_path_architecture_plan_v_0.md` §10 (email + reliable triggers).
+Email notifications + scheduled deadline sync; align with architecture notification layer (email + reliable triggers).
 
-### Scope
-- Email provider (Resend/SMTP via env)
-- Emails for deadline approaching (7-day window, active applications)
-- Email on application SUBMITTED (mirror in-app)
-- Daily cron: `syncDeadlineNotifications` for all students
-- Minimal unsubscribe / notification preferences
-- Unit tests; `arch-phase6` → `manager-phase6` → `dev-phase6`
+### Delivered
+`MailService` (Resend/SMTP/log), email for `DEADLINE_APPROACHING` and `APPLICATION_STATUS`, `User.emailNotificationsEnabled`, `Notification.emailSentAt`, daily `DeadlineSyncScheduler`, profile toggle. See `arch-phase6.md`, `manager-phase6.md`, `dev-phase6.md` (all APPROVED).
 
-### Out of Scope
-Scraping, community expansion, admin user monitoring, push notifications, ML pipelines.
-
-### Dependencies
-Phases 1–5 complete; existing `NotificationModule` and types.
+### Out of Scope (honored)
+Scraping, push notifications, "new recommendations" email, community expansion.
 
 ### Functional Testability
-- Test email received for deadline fixture scholarship
-- Cron endpoint or scheduler creates notifications without user login
-- In-app behavior unchanged
-
-### Handoff Notes for Phase Design
-`team-Yuri/arch-phase6.md` — STATUS: READY_FOR_MANAGER. See `DOCS/scholar_path_phases_plan_v_0.md` (v0.2).
+Email/log delivery on deadline sync and SUBMITTED; cron without browser; in-app unchanged.
 
 ---
 
-## Phase 7+: Real Data / Admin Ops — BACKLOG
+## Phase 7 (v3): Recommendation Engine — RETROACTIVE_COMPLETE
 
-See `DOCS/scholar_path_phases_plan_v_0.md` — Phase 7 (data pipeline), Phase 8 (admin ops). Not started.
+### Goal (v3)
+Insight layer: analyze user, rank opportunities, emit recommendations only — **no actions, no UI prioritization**.
+
+### Team Yuri delivery
+Implemented as **Phase 2 (Intelligence Layer)**: `MatchingModule`, `RuleFilterService`, `Recommendation` model, `/recommendations`, AI/rule ranking, profile summarization.
+
+### v3 constraints (honored in codebase)
+- Recommendations do not create `UserAction` rows
+- No “what to do next” logic in Matching layer
+
+### Functional Testability
+- Page: `/recommendations`
+- API: `GET /recommendations`, `POST /recommendations/refresh`
+
+### Handoff Notes
+No further Team Yuri phase required unless Recommendation Engine is extended (e.g. formal `RECOMMENDATION_GENERATED` event emission in Phase 8).
+
+---
+
+## Phase 7 (Team Yuri legacy): Action Engine MVP — COMPLETE
+
+### Goal
+First Action Engine delivery (pre-v3 numbering): `UserAction`, deterministic scoring, `/dashboard`, sync regeneration hooks.
+
+### Delivered
+See `team-Yuri/arch-phase7.md`, `manager-phase7.md`, `dev-phase7.md` (all APPROVED). Maps to **v3 Phase 8 MVP**.
+
+### Gap vs v3 contract
+Expiration lifecycle, `OPPORTUNITY_ACTION`, API pagination/filter, nightly reconciliation, traceability fields, hybrid scoring overrides — **Phase 8 (Team Yuri)**.
+
+---
+
+## Phase 8: Action Engine v3 Alignment — PLANNED (next)
+
+### Goal
+Close gaps between Action Engine MVP (Team Yuri Phase 7) and **v3 Phase 8 contract**: full lifecycle, expiration, hybrid priority model, richer API, dashboard “View All”, nightly reconciliation — while preserving Phases 1–7 behavior.
+
+### Scope
+- `EXPIRED` status + deterministic expiration rules per `DOCS/Phases/phase_8_action_engine_dd.md`
+- Add `OPPORTUNITY_ACTION` (high-value recommendation without application; distinct from `OPTIMIZATION_ACTION` / `ENGAGEMENT_ACTION`)
+- Traceability: `sourceEventId`, `priorityVersion` on `UserAction` (agent guide §10)
+- Hybrid scoring: base formula + business overrides + tie-breaker hierarchy (product DD §1, §Additional Product Rule)
+- `GET /actions`: filter (`type`, `status`), sort, pagination (arch v3 §12)
+- Nightly Action reconciliation cron (product DD §3; arch v3 §9)
+- `/dashboard/actions` or equivalent “View All” (product DD §5 — max 5 on dashboard, remainder accessible)
+- Unit tests; `arch-phase8` → `manager-phase8` → `dev-phase8`
+
+### Out of Scope
+- Full `SystemEvents` table and event replay UI (defer unless Manager proves minimal table needed for `sourceEventId`)
+- AI priority logic, ML tuning, Phase 10+ predictive engine
+- External ingestion (Phase 9)
+- Push/SMS, new email types from actions
+
+### Dependencies
+Team Yuri Phase 7 Action Engine complete; v3 Phase 7 recommendations stable; `phase_8_action_engine_dd.md` approved product decisions.
+
+### Functional Testability
+- Expired deadline → `DEADLINE_ACTION` becomes `EXPIRED`, not returned in OPEN feed
+- Dashboard shows ≤5 actions; “View All” lists paginated OPEN actions
+- `GET /actions?status=OPEN&type=DEADLINE_ACTION&limit=10&offset=0` works
+- Same user state → identical priority order after regenerate (determinism)
+- `/recommendations` unchanged; no frontend priority computation for Action Center ordering
+
+### Handoff Notes for Phase Design
+`team-Yuri/arch-phase8.md` — STATUS: READY_FOR_MANAGER. Sources: Architecture v3 §8–14, PRD v3 §Phase 8, `phase_8_action_engine_dd.md`, agent implementation guide.
+
+---
+
+## Phase 9: External Integration Layer — BACKLOG
+
+### Goal (v3)
+Controlled external data ingestion: scholarships (and future jobs/universities), normalize to internal schema, emit structured events — **read-only from externals, no auto-actions**.
+
+### Scope (draft — design in arch-phase9)
+- Extend Phase 5 `IngestionModule` toward production workflow
+- Optional `IngestionJob` table and scheduled runner
+- Source allowlist, validation pipeline, admin ops visibility
+- `EXTERNAL_DATA_SYNCED` event hook → Recommendation refresh (not direct Action creation)
+
+### Out of Scope (initial)
+Autonomous unsupervised scraping; external application submission; direct external writes to internal DB.
+
+### Dependencies
+Phase 8 complete; Phase 5 import foundation; legal/source allowlist decision.
+
+### Handoff Notes
+Replaces prior plan “Phase 8: Real Data Pipeline”. See `DOCS/scholar_path_phases_plan_v_0.md` for historical notes — reconcile in `arch-phase9.md`.
 
 ---
 
@@ -259,6 +347,8 @@ See `DOCS/scholar_path_phases_plan_v_0.md` — Phase 7 (data pipeline), Phase 8 
 
 | Question | Why It Matters | Required Decision |
 |---|---|---|
-| Email provider for Phase 6 (Resend vs SMTP) | Affects arch-phase6 | User before Yuri handoff |
-| Include “new recommendations” email in Phase 6? | Scope size | Default: defer to Phase 7 |
-| Scraping legal/source list for Phase 7 | Risk | Before Phase 7 design |
+| `OPPORTUNITY_ACTION` vs merge with `OPTIMIZATION_ACTION` | v3 PRD lists OPPORTUNITY; codebase has OPTIMIZATION | Architect default: add OPPORTUNITY; Manager may map generators |
+| Scoring config storage | Hybrid model needs tunable weights | Manager: env vars vs DB config table (default: env + constants file) |
+| Minimal event id for `sourceEventId` | Traceability without full event store | Manager: synthetic id from hook name + entity id + timestamp bucket |
+| Scraping legal/source list for Phase 9 | Risk | Before Phase 9 design |
+| Redirect authenticated `/` → `/dashboard`? | Nav UX | Manager choice (default: nav link only) |

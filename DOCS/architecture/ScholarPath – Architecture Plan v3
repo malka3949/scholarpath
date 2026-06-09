@@ -1,0 +1,329 @@
+# ScholarPath – Architecture Plan v3
+
+
+## 1. System Vision
+
+ScholarPath is a **decision + execution intelligence platform for students**.
+
+The system evolves through three tightly coupled layers:
+
+* Phase 7 → Recommendation Engine (Intelligence)
+* Phase 8 → Action Engine (Decision Layer)
+* Phase 9 → Integration Layer (External Data Ingestion)
+
+---
+
+## 2. Core Architectural Principle
+
+> The Action Engine is the single source of truth for user prioritization.
+
+No other system may define “what the user should do next”.
+
+---
+
+## 3. High-Level System Architecture
+
+```text id="arch1"
+[ Next.js Frontend ]
+        ↓
+[ Action Engine (Phase 8) ]   ← PRIMARY DECISION LAYER
+        ↓
+[ Recommendation Engine (Phase 7) ]
+        ↓
+[ Matching Engine ]
+        ↓
+[ PostgreSQL Database ]
+        ↓
+[ AI Layer (Claude API) ]
+        ↓
+[ External Integration Layer (Phase 9) ]
+```
+
+---
+
+## 4. Phase Boundaries
+
+### Phase 7 – Recommendation Engine (Intelligence Layer)
+
+Responsibilities:
+
+* Generate scholarship recommendations
+* Compute relevance scoring
+* Rank opportunities
+* Emit recommendation events
+
+Constraints:
+
+* No user prioritization
+* No action creation
+* No UI decisions
+
+Output:
+
+* Ranked recommendation set
+
+---
+
+### Phase 8 – Action Engine (Decision Layer)
+
+Responsibilities:
+
+* Convert system signals into Actions
+* Prioritize user actions deterministically
+* Maintain Action lifecycle
+* Enforce deduplication rules
+* Serve dashboard feed
+
+Constraints:
+
+* No AI-based decision making
+* No external system calls
+* No direct business logic outside priority rules
+
+Output:
+
+* UserAction list (source of truth for UI)
+
+---
+
+### Phase 9 – External Integration Layer (Data Layer)
+
+Responsibilities:
+
+* Fetch external data sources:
+
+  * Scholarships
+  * Jobs
+  * Universities
+* Normalize external data into internal schema
+* Emit structured events into system
+
+Constraints:
+
+* Read-only from external systems
+* User-assisted flow only
+* No submission to external systems
+
+Output:
+
+* ExternalDataEvents → internal event stream
+
+---
+
+## 5. Event-Driven Architecture
+
+### Core Event Types
+
+* PROFILE_UPDATED
+* APPLICATION_CREATED
+* APPLICATION_UPDATED
+* RECOMMENDATION_GENERATED
+* EXTERNAL_DATA_SYNCED
+* DEADLINE_APPROACHING
+
+---
+
+### Event Flow
+
+```text id="flow1"
+External Systems (Phase 9)
+        ↓
+Event Stream
+        ↓
+Recommendation Engine (Phase 7)
+        ↓
+Action Engine (Phase 8)
+        ↓
+Frontend UI
+```
+
+---
+
+## 6. Data Ownership Model
+
+| Domain               | Owner        |
+| -------------------- | ------------ |
+| User Profile         | Core System  |
+| Applications         | Core System  |
+| Recommendations      | Phase 7      |
+| Actions              | Phase 8      |
+| External Data        | Phase 9      |
+| Prioritization Logic | Phase 8 ONLY |
+
+---
+
+## 7. System Invariants (Hard Rules)
+
+* There is only ONE source of truth for prioritization (Action Engine)
+* No duplicate OPEN Actions per user/entity/type
+* External systems cannot mutate internal state directly
+* AI cannot influence priority logic
+* UI is a consumer only, never a decision maker
+
+---
+
+## 8. Action Engine Contract (Phase 8 Core)
+
+### Action Lifecycle
+
+```text id="life1"
+OPEN → DONE
+OPEN → DISMISSED
+OPEN → EXPIRED
+```
+
+---
+
+### Deduplication Rule
+
+```text id="dedup1"
+(user_id + action_type + related_entity_id) = UNIQUE OPEN ACTION
+```
+
+---
+
+### Expiration Rules
+
+* DEADLINE_ACTION → expires after deadline
+* COMPLETION_ACTION → closes when completed
+* OPPORTUNITY_ACTION → expires after 30 days
+* ENGAGEMENT_ACTION → expires after 14 days
+* OPTIMIZATION_ACTION → expires after 30 days or resolution
+
+---
+
+### Priority Principle
+
+Priority is computed based on:
+
+* urgency
+* impact
+* completion_gap
+* engagement
+
+With business-level overrides (not hardcoded constants).
+
+---
+
+## 9. Recalculation Strategy
+
+Action Engine recalculates on:
+
+* Profile updates
+* Application updates
+* Recommendation generation
+* Nightly reconciliation job
+
+Guarantee:
+
+> System reflects meaningful changes in near real-time while maintaining stability.
+
+---
+
+## 10. Consistency Model
+
+### Phase 7 (Recommendations)
+
+* Eventual consistency acceptable
+
+### Phase 8 (Actions)
+
+* Strong consistency per user
+
+### Phase 9 (External Data)
+
+* Eventual consistency only
+
+---
+
+## 11. Failure Model
+
+* Phase 7 failure → fallback to cached recommendations
+* Phase 8 failure → freeze action updates, serve last known state
+* Phase 9 failure → system operates on internal data only
+
+---
+
+## 12. API Surface (Core)
+
+### Actions API
+
+```text id="api1"
+GET /actions
+```
+
+Supports:
+
+* filtering (type, status)
+* sorting (priority_score, deadline)
+* pagination
+
+Constraint:
+
+> API never computes priority — only serves Action Engine output.
+
+---
+
+## 13. UI Data Model
+
+Dashboard is driven by:
+
+1. Action Center (Primary)
+2. Recommendations (Secondary)
+3. Deadlines & Risks (Supporting)
+
+Max visible Actions:
+
+* 5 items
+
+---
+
+## 14. System Invariants Enforcement
+
+These rules are non-negotiable:
+
+* No duplicate OPEN actions
+* No external write-back to internal DB
+* No AI-based ranking override
+* No bypassing Action Engine
+* No UI-based prioritization logic
+
+---
+
+## 15. Versioning Strategy
+
+* Phase logic is versioned
+* Scoring model is configurable (not hardcoded)
+* Backward compatibility required for:
+
+  * Actions
+  * Events
+  * External data schemas
+
+---
+
+## 16. Non-Functional Requirements
+
+* ≤ 500 users (MVP stage)
+* API latency < 2.5s
+* AI async tolerance ≤ 20s
+* System must function without AI dependency
+* Deterministic outputs required across runs
+
+---
+
+## 17. Future Evolution
+
+### Phase 10+ Vision
+
+* Predictive Action Engine (pre-event actions)
+* ML-based priority tuning
+* Cross-platform integrations
+* Adaptive personalization of scoring model
+
+---
+
+## 18. Final Architectural Statement
+
+> ScholarPath is not a recommendation system.
+> It is a deterministic decision system that converts external signals into prioritized user actions.

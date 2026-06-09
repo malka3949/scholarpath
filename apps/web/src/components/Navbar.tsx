@@ -31,6 +31,9 @@ export function Navbar() {
           {session && (
             <>
               <NotificationBell />
+              <Link href="/dashboard" className={navLink}>
+                לוח בקרה
+              </Link>
               <Link href="/recommendations" className={navLink}>
                 המלצות
               </Link>

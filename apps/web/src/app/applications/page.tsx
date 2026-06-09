@@ -9,8 +9,9 @@ import {
   type Application,
   type ApplicationStatus,
   STATUS_LABELS,
-  NEXT_STATUS,
+  getAvailableNextStatuses,
   isDeadlineWithinDays,
+  isScholarshipDeadlineOpen,
 } from '@/lib/api';
 
 export default function ApplicationsPage() {
@@ -85,8 +86,12 @@ export default function ApplicationsPage() {
 
       <div className="grid gap-4">
         {applications.map((app) => {
-          const nextStatuses = NEXT_STATUS[app.status] ?? [];
+          const nextStatuses = getAvailableNextStatuses(
+            app.status,
+            app.scholarship.deadline,
+          );
           const hasLetter = Boolean(app.motivationLetter?.trim());
+          const deadlineClosed = !isScholarshipDeadlineOpen(app.scholarship.deadline);
           const deadlineSoon =
             (app.status === 'NOT_STARTED' || app.status === 'IN_PROGRESS') &&
             isDeadlineWithinDays(app.scholarship.deadline);
@@ -109,6 +114,11 @@ export default function ApplicationsPage() {
                       ? 'מכתב מוטיבציה: נשמר'
                       : 'מכתב מוטיבציה: טרם נוצר'}
                   </p>
+                  {deadlineClosed && app.scholarship.deadline && (
+                    <p className="mt-2 text-xs font-medium text-red-700">
+                      המועד האחרון להגשה עבר — לא ניתן לסמן כהוגש
+                    </p>
+                  )}
                   {deadlineSoon && app.scholarship.deadline && (
                     <p className="mt-2 text-xs font-medium text-amber-700">
                       מועד אחרון בקרוב:{' '}

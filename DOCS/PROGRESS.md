@@ -1,9 +1,49 @@
 # ScholarPath — Progress
 
-**Current phase:** 6 — Delivery & Alerts (complete)  
-**Team Yuri pointer:** `team-Yuri/PHASE.md` → `PHASE=6`  
-**Last updated:** 2026-06-04  
-**Next:** Phase 7 planning — Real Data Pipeline (backlog). See `DOCS/scholar_path_phases_plan_v_0.md` v0.2.
+**Current phase:** 8 — Action Engine v3 Alignment (complete)  
+**Team Yuri pointer:** `team-Yuri/PHASE.md` → `PHASE=8`  
+**Last updated:** 2026-06-09  
+**Next:** Phase 9 — External Integration Layer (backlog). See `team-Yuri/plan.md`.
+
+---
+
+## Phase 8 — Action Engine v3 Alignment (complete)
+
+### Backend
+- [x] Migration `20260609120000_action_engine_v3` — EXPIRED, OPPORTUNITY_ACTION, traceability
+- [x] `ActionExpirationService` — per-type expiration + COMPLETION→DONE
+- [x] Hybrid priority-v2 scoring + tie-breaker + env weights
+- [x] `GET /actions` — status, type, limit, offset, sort, total
+- [x] `ActionReconciliationScheduler` — daily cron
+
+### Frontend
+- [x] `/dashboard/actions` — paginated View All (Hebrew)
+- [x] Dashboard "הצג הכל" link; actions rendered in API order
+
+### Verification
+- [x] Jest: `npm run test -w @scholarpath/api` (44 tests PASS)
+- [x] `team-Yuri/dev-phase8.md` evidence
+
+---
+
+## Phase 7 — Action Engine MVP (complete)
+
+### Backend
+- [x] `UserAction` model + enums + migration `20260608120000_action_engine`
+- [x] `ActionModule` — scoring, generators, upsert/regenerate, stale dismiss
+- [x] `GET /actions`, `POST /actions/regenerate`, `PATCH /actions/:id`
+- [x] `POST /admin/actions/regenerate/:userId` (ADMIN)
+- [x] Hooks: Application, Student, Matching, Events, Notification batch sync
+
+### Frontend
+- [x] `/dashboard` — Action Center, recommendations snippet, deadline pressure
+- [x] Navbar "לוח בקרה"; middleware protects `/dashboard`
+- [x] API client: `fetchActions`, `regenerateActions`, `updateActionStatus`
+
+### Verification
+- [x] Jest: `npm run test -w @scholarpath/api` (35 tests PASS)
+- [x] `team-Yuri/dev-phase7.md` evidence
+- [x] No AI priority, SystemEvents table, or scraping code
 
 ---
 

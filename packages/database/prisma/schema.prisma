@@ -37,6 +37,28 @@ enum ScholarshipEventType {
   APPLY_START
 }
 
+enum UserActionType {
+  DEADLINE_ACTION
+  COMPLETION_ACTION
+  OPTIMIZATION_ACTION
+  OPPORTUNITY_ACTION
+  ENGAGEMENT_ACTION
+}
+
+enum UserActionStatus {
+  OPEN
+  DONE
+  DISMISSED
+  EXPIRED
+}
+
+enum RelatedEntityType {
+  APPLICATION
+  SCHOLARSHIP
+  PROFILE
+  RECOMMENDATION
+}
+
 model User {
   id                        String   @id @default(cuid())
   email                     String   @unique
@@ -55,6 +77,7 @@ model User {
   scholarshipEvents ScholarshipEvent[]
   communityPosts    CommunityPost[]
   communityComments CommunityComment[]
+  userActions       UserAction[]
 
   @@map("users")
 }
@@ -187,4 +210,28 @@ model CommunityComment {
   @@index([postId, createdAt])
   @@index([postId, parentId, createdAt])
   @@map("community_comments")
+}
+
+model UserAction {
+  id                String             @id @default(cuid())
+  userId            String             @map("user_id")
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              UserActionType
+  title             String
+  description       String
+  priorityScore     Int                @map("priority_score")
+  status            UserActionStatus   @default(OPEN)
+  relatedEntityType RelatedEntityType? @map("related_entity_type")
+  relatedEntityId   String?            @map("related_entity_id")
+  ctaPath           String?            @map("cta_path")
+  metadata          Json?
+  sourceEventId     String?            @map("source_event_id")
+  priorityVersion   String             @default("priority-v1") @map("priority_version")
+  expiredAt         DateTime?          @map("expired_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  @@unique([userId, type, relatedEntityType, relatedEntityId])
+  @@index([userId, status, priorityScore])
+  @@map("user_actions")
 }

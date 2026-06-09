@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { apiFetch, scholarshipSourceLabel, type Scholarship } from '@/lib/api';
+import { apiFetch, scholarshipSourceLabel, isScholarshipDeadlineOpen, type Scholarship } from '@/lib/api';
 
 function asTags(tags: Scholarship['tags']): string[] {
   return Array.isArray(tags) ? tags : [];
@@ -70,7 +70,9 @@ export default function ScholarshipsPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        {scholarships.map((s) => (
+        {scholarships.map((s) => {
+          const canApply = isScholarshipDeadlineOpen(s.deadline);
+          return (
           <article
             key={s.id}
             className="sp-card flex flex-col transition-shadow hover:shadow-md"
@@ -93,8 +95,11 @@ export default function ScholarshipsPage() {
               {s.description}
             </p>
             {s.deadline && (
-              <p className="mt-3 text-xs font-medium text-amber-700">
-                מועד אחרון: {new Date(s.deadline).toLocaleDateString('he-IL')}
+              <p
+                className={`mt-3 text-xs font-medium ${canApply ? 'text-amber-700' : 'text-red-700'}`}
+              >
+                {canApply ? 'מועד אחרון: ' : 'המועד האחרון עבר: '}
+                {new Date(s.deadline).toLocaleDateString('he-IL')}
               </p>
             )}
             <div className="mt-3 flex flex-wrap gap-1.5">
@@ -116,7 +121,7 @@ export default function ScholarshipsPage() {
               >
                 פרטים
               </Link>
-              {session && (
+              {session && canApply && (
                 <Link
                   href={`/scholarships/${s.id}?track=1`}
                   className="text-sm font-medium text-cta-dark hover:underline"
@@ -126,7 +131,8 @@ export default function ScholarshipsPage() {
               )}
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
 
       {!loading && scholarships.length === 0 && !error && (

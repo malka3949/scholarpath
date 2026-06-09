@@ -153,6 +153,17 @@ export const NEXT_STATUS: Partial<Record<ApplicationStatus, ApplicationStatus[]>
   REJECTED: ['IN_PROGRESS'],
 };
 
+export function getAvailableNextStatuses(
+  status: ApplicationStatus,
+  deadline: string | null | undefined,
+): ApplicationStatus[] {
+  const next = NEXT_STATUS[status] ?? [];
+  if (!isScholarshipDeadlineOpen(deadline)) {
+    return next.filter((s) => s !== 'SUBMITTED');
+  }
+  return next;
+}
+
 export async function loginRequest(email: string, password: string) {
   return apiFetch<{ accessToken: string; user: AuthUser }>('/auth/login', {
     method: 'POST',
@@ -248,6 +259,7 @@ export type NotificationItem = {
   readAt: string | null;
   scholarshipId: string | null;
   applicationId: string | null;
+  applicationStatus?: ApplicationStatus | null;
   createdAt: string;
   scholarship?: { id: string; title: string; deadline: string | null };
 };
@@ -353,6 +365,82 @@ export async function addCommunityComment(
   );
 }
 
+export type UserActionType =
+  | 'DEADLINE_ACTION'
+  | 'COMPLETION_ACTION'
+  | 'OPTIMIZATION_ACTION'
+  | 'OPPORTUNITY_ACTION'
+  | 'ENGAGEMENT_ACTION';
+
+export type UserActionStatus = 'OPEN' | 'DONE' | 'DISMISSED' | 'EXPIRED';
+
+export type UserActionItem = {
+  id: string;
+  type: UserActionType;
+  title: string;
+  description: string;
+  priorityScore: number;
+  status: UserActionStatus;
+  relatedEntityType: 'APPLICATION' | 'SCHOLARSHIP' | 'PROFILE' | 'RECOMMENDATION' | null;
+  relatedEntityId: string | null;
+  ctaPath: string | null;
+  sourceEventId?: string | null;
+  priorityVersion?: string;
+  expiredAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UserActionListResponse = {
+  items: UserActionItem[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export type FetchActionsParams = {
+  status?: UserActionStatus;
+  type?: UserActionType;
+  limit?: number;
+  offset?: number;
+  sort?: 'priority_score' | 'createdAt';
+};
+
+export async function fetchActions(
+  token: string,
+  params: FetchActionsParams = {},
+) {
+  const search = new URLSearchParams();
+  if (params.status) search.set('status', params.status);
+  if (params.type) search.set('type', params.type);
+  if (params.limit != null) search.set('limit', String(params.limit));
+  if (params.offset != null) search.set('offset', String(params.offset));
+  if (params.sort) search.set('sort', params.sort);
+  const qs = search.toString();
+  return apiFetch<UserActionListResponse>(`/actions${qs ? `?${qs}` : ''}`, {
+    token,
+  });
+}
+
+export async function regenerateActions(token: string) {
+  return apiFetch<UserActionListResponse>('/actions/regenerate', {
+    method: 'POST',
+    token,
+  });
+}
+
+export async function updateActionStatus(
+  token: string,
+  id: string,
+  status: 'DONE' | 'DISMISSED',
+) {
+  return apiFetch<UserActionItem>(`/actions/${id}`, {
+    method: 'PATCH',
+    token,
+    body: JSON.stringify({ status }),
+  });
+}
+
 export function scholarshipSourceLabel(
   source?: ScholarshipSource,
 ): string | null {
@@ -371,4 +459,38 @@ export function isDeadlineWithinDays(
   const end = new Date(now);
   end.setDate(end.getDate() + days);
   return d > now && d <= end;
+}
+
+/** Deadline unset or still in the future. */
+export function isScholarshipDeadlineOpen(
+  deadline: string | null | undefined,
+): boolean {
+  if (!deadline) return true;
+  return new Date(deadline) > new Date();
+}
+
+const OPPORTUNITY_EXCLUDED_STATUSES: ApplicationStatus[] = [
+  'SUBMITTED',
+  'ACCEPTED',
+  'REJECTED',
+];
+
+/**
+ * Recommendations suitable for dashboard "open opportunities":
+ * open deadline and no application in a terminal (post-submit) state.
+ */
+export function filterOpenOpportunities(
+  items: RecommendationItem[],
+  applications: Application[],
+): RecommendationItem[] {
+  const appByScholarship = new Map(
+    applications.map((a) => [a.scholarshipId, a]),
+  );
+
+  return items.filter((rec) => {
+    if (!isScholarshipDeadlineOpen(rec.scholarship.deadline)) return false;
+    const app = appByScholarship.get(rec.scholarship.id);
+    if (app && OPPORTUNITY_EXCLUDED_STATUSES.includes(app.status)) return false;
+    return true;
+  });
 }

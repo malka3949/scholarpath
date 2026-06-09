@@ -9,9 +9,103 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
   syncDeadlineNotifications,
+  isScholarshipDeadlineOpen,
   type NotificationItem,
 } from '@/lib/api';
+import {
+  getNotificationStyle,
+  getNotificationTypeLabel,
+} from '@/lib/notification-styles';
 import { notifyNotificationsUpdated } from '@/components/NotificationBell';
+
+function NotificationCard({
+  item,
+  onMarkRead,
+}: {
+  item: NotificationItem;
+  onMarkRead: (id: string) => void;
+}) {
+  const style = getNotificationStyle(item);
+  const deadlineExpired =
+    item.scholarship?.deadline &&
+    !isScholarshipDeadlineOpen(item.scholarship.deadline);
+
+  return (
+    <article
+      className={`sp-card border ${style.cardClass} ${
+        !item.readAt ? `ring-2 ring-offset-1 ${style.unreadRingClass}` : ''
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${style.badgeClass}`}
+            >
+              {style.label}
+            </span>
+            <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs text-slate-600">
+              {getNotificationTypeLabel(item.type)}
+            </span>
+            {!item.readAt && (
+              <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-medium text-white">
+                חדש
+              </span>
+            )}
+          </div>
+          <h2 className={`mt-2 font-semibold ${style.titleClass}`}>
+            {item.title}
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">{item.body}</p>
+          {deadlineExpired &&
+            item.type === 'DEADLINE_APPROACHING' &&
+            item.applicationStatus !== 'SUBMITTED' && (
+            <p className="mt-2 text-sm font-medium text-red-700">
+              המועד האחרון להגשה עבר — לא ניתן להגיש בקשה חדשה
+            </p>
+          )}
+          {item.scholarship?.deadline && (
+            <p
+              className={`mt-2 text-xs font-medium ${
+                deadlineExpired ? 'text-red-600' : 'text-amber-700'
+              }`}
+            >
+              {deadlineExpired ? 'מועד אחרון (עבר): ' : 'מועד אחרון: '}
+              {new Date(item.scholarship.deadline).toLocaleDateString('he-IL')}
+            </p>
+          )}
+          <p className="mt-2 text-xs text-slate-500">
+            {new Date(item.createdAt).toLocaleString('he-IL')}
+          </p>
+        </div>
+        {!item.readAt && (
+          <button
+            onClick={() => onMarkRead(item.id)}
+            className="sp-btn-secondary shrink-0 text-sm"
+          >
+            סמן כנקרא
+          </button>
+        )}
+      </div>
+      {item.applicationId && (
+        <Link
+          href={`/applications/${item.applicationId}`}
+          className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
+        >
+          לבקשה
+        </Link>
+      )}
+    </article>
+  );
+}
+
+const LEGEND = [
+  { label: 'פג תוקף', badgeClass: 'bg-red-100 text-red-800' },
+  { label: 'טרם התחיל', badgeClass: 'bg-amber-100 text-amber-900' },
+  { label: 'בתהליך', badgeClass: 'bg-orange-100 text-orange-900' },
+  { label: 'הוגש', badgeClass: 'bg-emerald-100 text-emerald-800' },
+  { label: 'מערכת', badgeClass: 'bg-slate-100 text-slate-700' },
+] as const;
 
 export default function NotificationsPage() {
   const { data: session, status } = useSession();
@@ -125,38 +219,24 @@ export default function NotificationsPage() {
         <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
       )}
 
+      <div className="flex flex-wrap gap-2">
+        {LEGEND.map((item) => (
+          <span
+            key={item.label}
+            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${item.badgeClass}`}
+          >
+            {item.label}
+          </span>
+        ))}
+      </div>
+
       <div className="grid gap-3">
         {items.map((item) => (
-          <article
+          <NotificationCard
             key={item.id}
-            className={`sp-card ${!item.readAt ? 'border-indigo-200 bg-indigo-50/30' : ''}`}
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <h2 className="font-semibold text-indigo-950">{item.title}</h2>
-                <p className="mt-1 text-sm text-slate-600">{item.body}</p>
-                <p className="mt-2 text-xs text-slate-500">
-                  {new Date(item.createdAt).toLocaleString('he-IL')}
-                </p>
-              </div>
-              {!item.readAt && (
-                <button
-                  onClick={() => handleMarkRead(item.id)}
-                  className="sp-btn-secondary shrink-0 text-sm"
-                >
-                  סמן כנקרא
-                </button>
-              )}
-            </div>
-            {item.applicationId && (
-              <Link
-                href={`/applications/${item.applicationId}`}
-                className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
-              >
-                לבקשה
-              </Link>
-            )}
-          </article>
+            item={item}
+            onMarkRead={handleMarkRead}
+          />
         ))}
       </div>
 

@@ -16,6 +16,7 @@ import { UpdateMotivationLetterDto } from './dto/update-motivation-letter.dto';
 import { GenerateMotivationLetterDto } from './dto/generate-motivation-letter.dto';
 import { NotificationService } from '../notification/notification.service';
 import { EventsService } from '../events/events.service';
+import { ActionService } from '../action/action.service';
 
 @Injectable()
 export class ApplicationService {
@@ -26,6 +27,7 @@ export class ApplicationService {
     private readonly studentService: StudentService,
     private readonly notificationService: NotificationService,
     private readonly eventsService: EventsService,
+    private readonly actionService: ActionService,
   ) {}
 
   async findAllForUser(userId: string) {
@@ -67,6 +69,10 @@ export class ApplicationService {
       throw new ConflictException('כבר קיימת בקשה למלגה זו');
     }
 
+    if (!this.isDeadlineOpen(scholarship.deadline)) {
+      throw new BadRequestException('המועד האחרון להגשת בקשה למלגה זו עבר');
+    }
+
     const application = await this.prisma.application.create({
       data: {
         userId,
@@ -77,6 +83,8 @@ export class ApplicationService {
     });
 
     await this.eventsService.recordApplyStartSafe(userId, dto.scholarshipId);
+
+    this.actionService.scheduleRegenerate(userId);
 
     return application;
   }
@@ -112,6 +120,13 @@ export class ApplicationService {
       );
     }
 
+    if (
+      dto.status === ApplicationStatus.SUBMITTED &&
+      !this.isDeadlineOpen(application.scholarship.deadline)
+    ) {
+      throw new BadRequestException('המועד האחרון להגשת בקשה למלגה זו עבר');
+    }
+
     const updated = await this.prisma.application.update({
       where: { id: applicationId },
       data: { status: dto.status },
@@ -123,6 +138,8 @@ export class ApplicationService {
         updated,
       );
     }
+
+    this.actionService.scheduleRegenerate(userId);
 
     return updated;
   }
@@ -138,7 +155,7 @@ export class ApplicationService {
       dto.motivationLetter,
     );
 
-    return this.prisma.application.update({
+    const updated = await this.prisma.application.update({
       where: { id: applicationId },
       data: {
         motivationLetter: dto.motivationLetter,
@@ -146,6 +163,10 @@ export class ApplicationService {
       },
       include: { scholarship: true },
     });
+
+    this.actionService.scheduleRegenerate(userId);
+
+    return updated;
   }
 
   async generateMotivationLetter(
@@ -186,6 +207,8 @@ export class ApplicationService {
       include: { scholarship: true },
     });
 
+    this.actionService.scheduleRegenerate(userId);
+
     return { application: updated, source };
   }
 
@@ -200,5 +223,10 @@ export class ApplicationService {
       return ApplicationStatus.IN_PROGRESS;
     }
     return current;
+  }
+
+  private isDeadlineOpen(deadline: Date | null): boolean {
+    if (!deadline) return true;
+    return deadline.getTime() > Date.now();
   }
 }
