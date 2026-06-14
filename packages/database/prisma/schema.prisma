@@ -59,6 +59,18 @@ enum RelatedEntityType {
   RECOMMENDATION
 }
 
+enum IngestionSourceType {
+  IMPORT
+  FETCH
+}
+
+enum IngestionJobStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
 model User {
   id                        String   @id @default(cuid())
   email                     String   @unique
@@ -234,4 +246,20 @@ model UserAction {
   @@unique([userId, type, relatedEntityType, relatedEntityId])
   @@index([userId, status, priorityScore])
   @@map("user_actions")
+}
+
+model IngestionJob {
+  id          String              @id @default(cuid())
+  sourceType  IngestionSourceType @map("source_type")
+  sourceRef   String              @map("source_ref")
+  status      IngestionJobStatus  @default(PENDING)
+  imported    Int                 @default(0)
+  updated     Int                 @default(0)
+  skipped     Int                 @default(0)
+  errorLog    Json?               @map("error_log")
+  startedAt   DateTime            @default(now()) @map("started_at")
+  completedAt DateTime?           @map("completed_at")
+
+  @@index([startedAt])
+  @@map("ingestion_jobs")
 }

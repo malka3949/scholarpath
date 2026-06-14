@@ -11,8 +11,8 @@ Team Yuri execution phases align to **`DOCS/prd/scholar_path_prd_v3.md`** and **
 |---|---|---|---|
 | 1–6 | Foundation → Workflow | Phases 1–6 (MVP → Delivery & Alerts) | COMPLETE |
 | **7** | Insight — Recommendation Engine | Phase 2 (Intelligence) + Matching | COMPLETE (retroactive) |
-| **8** | Decision — Action Engine | Phase 7 MVP + **Phase 8 hardening** | MVP COMPLETE → **Phase 8 next** |
-| **9** | Expansion — External Integration | Phase 9 (was “Real Data Pipeline” backlog) | BACKLOG |
+| **8** | Decision — Action Engine | Phase 7 MVP + Phase 8 hardening | COMPLETE |
+| **9** | Expansion — External Integration | Phase 9 — scholarships ingestion MVP | COMPLETE |
 
 **Rule (v3):** Only the Action Engine defines user prioritization. Recommendations are signals only. See `DOCS/engineering/agent-guides/scholarpath-agent-implementation-guide-v1.md`.
 
@@ -285,61 +285,56 @@ Expiration lifecycle, `OPPORTUNITY_ACTION`, API pagination/filter, nightly recon
 
 ---
 
-## Phase 8: Action Engine v3 Alignment — PLANNED (next)
+## Phase 8: Action Engine v3 Alignment — COMPLETE
 
 ### Goal
 Close gaps between Action Engine MVP (Team Yuri Phase 7) and **v3 Phase 8 contract**: full lifecycle, expiration, hybrid priority model, richer API, dashboard “View All”, nightly reconciliation — while preserving Phases 1–7 behavior.
 
-### Scope
-- `EXPIRED` status + deterministic expiration rules per `DOCS/Phases/phase_8_action_engine_dd.md`
-- Add `OPPORTUNITY_ACTION` (high-value recommendation without application; distinct from `OPTIMIZATION_ACTION` / `ENGAGEMENT_ACTION`)
-- Traceability: `sourceEventId`, `priorityVersion` on `UserAction` (agent guide §10)
-- Hybrid scoring: base formula + business overrides + tie-breaker hierarchy (product DD §1, §Additional Product Rule)
-- `GET /actions`: filter (`type`, `status`), sort, pagination (arch v3 §12)
-- Nightly Action reconciliation cron (product DD §3; arch v3 §9)
-- `/dashboard/actions` or equivalent “View All” (product DD §5 — max 5 on dashboard, remainder accessible)
-- Unit tests; `arch-phase8` → `manager-phase8` → `dev-phase8`
+### Delivered
+`EXPIRED` lifecycle, `OPPORTUNITY_ACTION`, hybrid priority-v2, traceability fields, paginated `GET /actions`, `ActionReconciliationScheduler`, `/dashboard/actions` View All. See `team-Yuri/arch-phase8.md`, `manager-phase8.md`, `dev-phase8.md` (all APPROVED).
 
-### Out of Scope
-- Full `SystemEvents` table and event replay UI (defer unless Manager proves minimal table needed for `sourceEventId`)
-- AI priority logic, ML tuning, Phase 10+ predictive engine
-- External ingestion (Phase 9)
-- Push/SMS, new email types from actions
-
-### Dependencies
-Team Yuri Phase 7 Action Engine complete; v3 Phase 7 recommendations stable; `phase_8_action_engine_dd.md` approved product decisions.
+### Out of Scope (honored)
+Full `SystemEvents` table, AI priority logic, external ingestion (Phase 9), push/SMS.
 
 ### Functional Testability
-- Expired deadline → `DEADLINE_ACTION` becomes `EXPIRED`, not returned in OPEN feed
-- Dashboard shows ≤5 actions; “View All” lists paginated OPEN actions
-- `GET /actions?status=OPEN&type=DEADLINE_ACTION&limit=10&offset=0` works
-- Same user state → identical priority order after regenerate (determinism)
-- `/recommendations` unchanged; no frontend priority computation for Action Center ordering
+Expired deadline actions excluded from OPEN feed; dashboard ≤5 + View All; deterministic priority order; `/recommendations` unchanged.
 
-### Handoff Notes for Phase Design
-`team-Yuri/arch-phase8.md` — STATUS: READY_FOR_MANAGER. Sources: Architecture v3 §8–14, PRD v3 §Phase 8, `phase_8_action_engine_dd.md`, agent implementation guide.
+### Handoff Notes
+Phase 8 architecturally closed. Ad-hoc post-close bugfixes (dashboard loading, `/actions` recursion) may need Developer patch note outside `dev-phase8.md`.
 
 ---
 
-## Phase 9: External Integration Layer — BACKLOG
+## Phase 9: External Integration Layer — COMPLETE
 
 ### Goal (v3)
-Controlled external data ingestion: scholarships (and future jobs/universities), normalize to internal schema, emit structured events — **read-only from externals, no auto-actions**.
+**Controlled scholarship ingestion:** extend Phase 5 `IngestionModule` with enhanced admin bulk import **and** admin-triggered fetch from env allowlisted URLs/APIs; normalize to internal schema; audit via `IngestionJob`; emit `EXTERNAL_DATA_SYNCED` hook → Recommendation refresh only — **read-only from externals, no auto-actions**.
 
-### Scope (draft — design in arch-phase9)
-- Extend Phase 5 `IngestionModule` toward production workflow
-- Optional `IngestionJob` table and scheduled runner
-- Source allowlist, validation pipeline, admin ops visibility
-- `EXTERNAL_DATA_SYNCED` event hook → Recommendation refresh (not direct Action creation)
+### Delivered (arch-phase9 APPROVED; dev-phase9 PASS; manager-phase9 APPROVED)
+- `IngestionJob` table + job status lifecycle (`20260611120000_ingestion_jobs`)
+- Import upsert/dedupe by normalized `sourceUrl`; extended `POST /admin/scholarships/import` response
+- Allowlist env + `POST /admin/ingestion/fetch` (60s admin cooldown)
+- `GET /admin/ingestion/jobs` (+ detail with `errorLog`)
+- `IngestionSyncService` → batch `MatchingService.refreshRecommendations` (no direct Action Engine from ingestion)
+- Optional `IngestionSyncScheduler` when `CRON_INGESTION_SYNC` set
+- Admin UI: import counts, fetch form, job history (Hebrew)
+- `fixtures/scholarships-external.json` + `local-fixture` dev key
+- Unit tests 61/61 PASS
 
-### Out of Scope (initial)
-Autonomous unsupervised scraping; external application submission; direct external writes to internal DB.
+### Out of Scope (honored)
+Autonomous unsupervised scraping; jobs/universities data models; external application submission; direct external DB writes; full event store; student-facing ingestion UI; new top-level folders; partial unique index on `sourceUrl`.
 
 ### Dependencies
-Phase 8 complete; Phase 5 import foundation; legal/source allowlist decision.
+Phase 8 complete; Phase 5 import foundation; Phase 7 matching refresh.
+
+### Functional Testability
+- Admin import with duplicate `sourceUrl` → update + job SUCCESS
+- Admin fetch from allowlisted key → scholarships on `/scholarships` as IMPORTED
+- Unknown fetch key → 400
+- After sync → recommendations refresh smoke; `/dashboard` unchanged
+- Ingestion failure → SEED/ADMIN data intact
 
 ### Handoff Notes
-Replaces prior plan “Phase 8: Real Data Pipeline”. See `DOCS/scholar_path_phases_plan_v_0.md` for historical notes — reconcile in `arch-phase9.md`.
+Phase 9 architecturally closed. Evidence: `team-Yuri/dev-phase9.md`. Next backlog: real data pipeline at scale / Phase 10+ per product roadmap — orchestrator sets `PHASE.md` when ready.
 
 ---
 
@@ -347,8 +342,8 @@ Replaces prior plan “Phase 8: Real Data Pipeline”. See `DOCS/scholar_path_ph
 
 | Question | Why It Matters | Required Decision |
 |---|---|---|
-| `OPPORTUNITY_ACTION` vs merge with `OPTIMIZATION_ACTION` | v3 PRD lists OPPORTUNITY; codebase has OPTIMIZATION | Architect default: add OPPORTUNITY; Manager may map generators |
-| Scoring config storage | Hybrid model needs tunable weights | Manager: env vars vs DB config table (default: env + constants file) |
-| Minimal event id for `sourceEventId` | Traceability without full event store | Manager: synthetic id from hook name + entity id + timestamp bucket |
-| Scraping legal/source list for Phase 9 | Risk | Before Phase 9 design |
+| `OPPORTUNITY_ACTION` vs merge with `OPTIMIZATION_ACTION` | v3 PRD lists OPPORTUNITY; codebase has OPTIMIZATION | **Closed** — Phase 8: separate type, thresholds 80/70 |
+| Scoring config storage | Hybrid model needs tunable weights | **Closed** — Phase 8: env vars + constants file |
+| Minimal event id for `sourceEventId` | Traceability without full event store | **Closed** — Phase 8: synthetic id format |
+| Scraping legal/source list for Phase 9 | Risk | **Closed** — Phase 9: env allowlist + admin-triggered fetch/import only; no autonomous scraping |
 | Redirect authenticated `/` → `/dashboard`? | Nav UX | Manager choice (default: nav link only) |

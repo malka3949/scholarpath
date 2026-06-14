@@ -8,5 +8,14 @@ export {
   UserActionType,
   UserActionStatus,
   RelatedEntityType,
+  IngestionSourceType,
+  IngestionJobStatus,
 } from '@prisma/client';
-export type { User, StudentProfile, Scholarship, Application, UserAction } from '@prisma/client';
+export type {
+  User,
+  StudentProfile,
+  Scholarship,
+  Application,
+  UserAction,
+  IngestionJob,
+} from '@prisma/client';

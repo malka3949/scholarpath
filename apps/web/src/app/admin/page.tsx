@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { apiFetch, importScholarships, type Scholarship } from '@/lib/api';
+import { apiFetch, importScholarships, fetchExternalScholarships, fetchIngestionJobs, type Scholarship, type IngestionJobItem } from '@/lib/api';
 
 type FormState = {
   title: string;
@@ -38,6 +38,11 @@ export default function AdminPage() {
   const [error, setError] = useState('');
   const [importJson, setImportJson] = useState('');
   const [importResult, setImportResult] = useState('');
+  const [sourceKey, setSourceKey] = useState('local-fixture');
+  const [fetchResult, setFetchResult] = useState('');
+  const [fetchError, setFetchError] = useState('');
+  const [jobs, setJobs] = useState<IngestionJobItem[]>([]);
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login');
@@ -49,8 +54,19 @@ export default function AdminPage() {
   useEffect(() => {
     if (session?.accessToken && session.user.role === 'ADMIN') {
       loadScholarships();
+      loadJobs();
     }
   }, [session]);
+
+  async function loadJobs() {
+    if (!session?.accessToken) return;
+    try {
+      const data = await fetchIngestionJobs(session.accessToken, { limit: 10 });
+      setJobs(data.items);
+    } catch {
+      // non-blocking
+    }
+  }
 
   async function loadScholarships() {
     if (!session?.accessToken) return;
@@ -131,7 +147,7 @@ export default function AdminPage() {
       }
       const result = await importScholarships(session.accessToken, items);
       setImportResult(
-        `יובאו: ${result.imported}, דולגו: ${result.skipped}${
+        `יובאו: ${result.imported}, עודכנו: ${result.updated}, דולגו: ${result.skipped} · מזהה job: ${result.jobId}${
           result.errors?.length
             ? ` · שגיאות: ${result.errors.map((e) => `#${e.index}`).join(', ')}`
             : ''
@@ -139,8 +155,26 @@ export default function AdminPage() {
       );
       setImportJson('');
       await loadScholarships();
+      await loadJobs();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בייבוא');
+    }
+  }
+
+  async function handleFetch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!session?.accessToken) return;
+    setFetchError('');
+    setFetchResult('');
+    try {
+      const result = await fetchExternalScholarships(session.accessToken, sourceKey);
+      setFetchResult(
+        `יובאו: ${result.imported}, עודכנו: ${result.updated}, דולגו: ${result.skipped} · מזהה job: ${result.jobId}`,
+      );
+      await loadScholarships();
+      await loadJobs();
+    } catch (err) {
+      setFetchError(err instanceof Error ? err.message : 'שגיאה במשיכה');
     }
   }
 
@@ -239,6 +273,92 @@ export default function AdminPage() {
           ייבוא
         </button>
       </form>
+
+      <form
+        onSubmit={handleFetch}
+        className="space-y-4 rounded-lg border bg-white p-6"
+      >
+        <h2 className="font-semibold">משיכה ממקור חיצוני</h2>
+        <p className="text-sm text-slate-600">
+          הזן מפתח מקור מה-allowlist (למשל real-local או real-gist).
+        </p>
+        <input
+          value={sourceKey}
+          onChange={(e) => setSourceKey(e.target.value)}
+          placeholder="real-local"
+          className="w-full rounded border px-3 py-2"
+          required
+        />
+        {fetchResult && <p className="text-sm text-green-700">{fetchResult}</p>}
+        {fetchError && <p className="text-sm text-red-700">{fetchError}</p>}
+        <button
+          type="submit"
+          className="rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+        >
+          משוך מלגות
+        </button>
+      </form>
+
+      <div className="space-y-3 rounded-lg border bg-white p-6">
+        <h2 className="font-semibold">היסטוריית ייבוא</h2>
+        {jobs.length === 0 ? (
+          <p className="text-sm text-slate-600">אין עדיין jobs</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-right">
+                  <th className="p-2">תאריך</th>
+                  <th className="p-2">סוג</th>
+                  <th className="p-2">מקור</th>
+                  <th className="p-2">סטטוס</th>
+                  <th className="p-2">יובאו/עודכנו/דולגו</th>
+                  <th className="p-2">פרטים</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jobs.map((job) => (
+                  <tr key={job.id} className="border-b">
+                    <td className="p-2">
+                      {new Date(job.startedAt).toLocaleString('he-IL')}
+                    </td>
+                    <td className="p-2">{job.sourceType}</td>
+                    <td className="p-2">{job.sourceRef}</td>
+                    <td className="p-2">{job.status}</td>
+                    <td className="p-2">
+                      {job.imported}/{job.updated}/{job.skipped}
+                    </td>
+                    <td className="p-2">
+                      {job.errorLog ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedJobId(expandedJobId === job.id ? null : job.id)
+                          }
+                          className="text-blue-600 hover:underline"
+                        >
+                          {expandedJobId === job.id ? 'הסתר' : 'שגיאות'}
+                        </button>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {expandedJobId && (
+              <pre className="mt-3 overflow-x-auto rounded bg-slate-50 p-3 text-xs">
+                {JSON.stringify(
+                  jobs.find((j) => j.id === expandedJobId)?.errorLog,
+                  null,
+                  2,
+                )}
+              </pre>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="space-y-3">
         <h2 className="font-semibold">מלגות קיימות ({scholarships.length})</h2>

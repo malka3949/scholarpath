@@ -1,3 +1,4 @@
+import './tls-env';
 import { config } from 'dotenv';
 import { resolve } from 'path';
 

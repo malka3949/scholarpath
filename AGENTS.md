@@ -15,27 +15,30 @@ Architecture: modular monolith — Next.js frontend, NestJS backend, PostgreSQL 
 | Auth | NextAuth (email + Google OAuth) |
 | AI | Claude API (optional, template fallback) |
 
-## Current Phase: 8 — Action Engine v3 Alignment (complete)
+## Current Phase: 9 — External Integration Layer (complete)
 
-**Goal:** Harden Action Engine per Architecture v3 — expiration, OPPORTUNITY_ACTION, priority-v2, paginated API, View All.
+**Goal:** Controlled scholarship ingestion — enhanced bulk import, allowlisted fetch, job audit, recommendation sync hook.
 
-### Delivered (Phase 8)
+### Delivered (Phase 9)
 
-- `EXPIRED` status + expiration rules (`ActionExpirationService`)
-- `OPPORTUNITY_ACTION` (score ≥80) with scholarship-type exclusivity
-- Hybrid scoring priority-v2 + env weights + tie-breaker
-- `sourceEventId`, `priorityVersion` traceability
-- `GET /actions` filter, sort, pagination (`total`, `limit`, `offset`)
-- `ActionReconciliationScheduler` daily cron
-- `/dashboard/actions` View All + "הצג הכל" link
+- `IngestionJob` table + enums; migration `20260611120000_ingestion_jobs`
+- Import upsert by normalized `sourceUrl`; `jobId`, `updated` in response
+- `INGESTION_ALLOWLIST` env; `IngestionFetchService` (HTTPS + dev `file://`)
+- `GET /admin/ingestion/jobs`, `GET /admin/ingestion/jobs/:id`
+- `POST /admin/ingestion/fetch` with 60s admin cooldown
+- `IngestionSyncService` — batch `MatchingService.refreshRecommendations` (no ActionService in ingestion)
+- Optional `CRON_INGESTION_SYNC` scheduler
+- `/admin` Hebrew UI: fetch form, job history, enhanced import counts
+- `fixtures/scholarships-external.json` for local dev
 
-### Prior (Phase 7 MVP)
+### Prior (Phase 8)
 
-ActionModule, `/dashboard`, regenerate hooks — see `dev-phase7.md`.
+Action Engine v3 — EXPIRED, OPPORTUNITY_ACTION, priority-v2, paginated API, View All — see `dev-phase8.md`.
 
-### Next (Phase 9 — backlog)
+### Next (Phase 10+ — backlog)
 
-- External Integration Layer — see `team-Yuri/plan.md`
+- Real data pipeline (controlled ingestion at scale)
+- See `team-Yuri/plan.md`
 
 ## Application State Machine
 

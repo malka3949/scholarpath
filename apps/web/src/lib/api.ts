@@ -76,10 +76,34 @@ export type Scholarship = {
 export type ScholarshipEventType = 'VIEW' | 'APPLY_START';
 
 export type ImportScholarshipsResult = {
+  jobId: string;
   imported: number;
+  updated: number;
   skipped: number;
   errors?: { index: number; message: string }[];
 };
+
+export type IngestionJobItem = {
+  id: string;
+  sourceType: string;
+  sourceRef: string;
+  status: string;
+  imported: number;
+  updated: number;
+  skipped: number;
+  startedAt: string;
+  completedAt?: string | null;
+  errorLog?: unknown;
+};
+
+export type IngestionJobListResponse = {
+  items: IngestionJobItem[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export type IngestionResult = ImportScholarshipsResult;
 
 export type CommunityPostItem = {
   id: string;
@@ -315,6 +339,33 @@ export async function importScholarships(
     token,
     body: JSON.stringify({ items }),
   });
+}
+
+export async function fetchExternalScholarships(token: string, sourceKey: string) {
+  return apiFetch<IngestionResult>('/admin/ingestion/fetch', {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ sourceKey }),
+  });
+}
+
+export async function fetchIngestionJobs(
+  token: string,
+  params?: { status?: string; limit?: number; offset?: number },
+) {
+  const search = new URLSearchParams();
+  if (params?.status) search.set('status', params.status);
+  if (params?.limit !== undefined) search.set('limit', String(params.limit));
+  if (params?.offset !== undefined) search.set('offset', String(params.offset));
+  const qs = search.toString();
+  return apiFetch<IngestionJobListResponse>(
+    `/admin/ingestion/jobs${qs ? `?${qs}` : ''}`,
+    { token },
+  );
+}
+
+export async function fetchIngestionJob(token: string, id: string) {
+  return apiFetch<IngestionJobItem>(`/admin/ingestion/jobs/${id}`, { token });
 }
 
 export async function recordScholarshipEvent(

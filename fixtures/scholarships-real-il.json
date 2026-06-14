@@ -1,0 +1,58 @@
+[
+  {
+    "title": "מלגת פר\"ח — ליווי והוראה",
+    "description": "תוכנית לאומית: סטודנטים מלווים תלמידים ומקבלים מלגה חודשית. מתאים לסטודנטים בכל תחום, כולל מדעי המחשב והנדסה. הרשמה דרך האתר הרשמי.",
+    "sourceUrl": "https://www.perach.org.il/",
+    "tags": ["ליווי", "סטודנטים", "מלגה חודשית"],
+    "deadline": "2026-10-31"
+  },
+  {
+    "title": "מלגות וסיוע כלכלי — מועצה להשכלה גבוהה",
+    "description": "מידע מרכזי על מלגות, הלוואות וסיוע כלכלי לסטודנטים בתואר ראשון ושני בישראל. כולל הפניות למלגות ממשלתיות ומוסדיות.",
+    "sourceUrl": "https://che.org.il/",
+    "tags": ["ממשלתי", "סיוע כלכלי", "תואר ראשון"],
+    "deadline": "2026-12-31"
+  },
+  {
+    "title": "מלגות קרן אזrieli",
+    "description": "קרן אזrieli מעניקה מלגות ותמיכה לסטודנטים מצטיינים, בין היתר בתחומי מדע וטכנולוגיה. פרטים, קריטריונים ומועדי הגשה באתר הקרן.",
+    "sourceUrl": "https://www.azrielifoundation.org/our-activities/israel-activities/scholarships/",
+    "tags": ["מצטיינים", "הנדסה", "מדע"],
+    "deadline": "2026-09-30"
+  },
+  {
+    "title": "Generation Google Scholarship",
+    "description": "מלגה בינלאומית של Google לסטודנטים בתחומי מדעי המחשב והנדסה. כוללת סכום כספי וכנס. בדקו זכאות לישראל בכל מחזור.",
+    "sourceUrl": "https://buildyourfuture.withgoogle.com/scholarships/generation-google-scholarship-emea",
+    "tags": ["Google", "CS", "הנדסה", "בינלאומי"],
+    "deadline": "2026-04-30"
+  },
+  {
+    "title": "מלגות לסטודנטים — רשות החדשנות",
+    "description": "רשות החדשנות מפרסמת מענקים ומלגות בתחומי היי-טק, מחקר ופיתוח. רלוונטי לסטודנטים להנדסה ומדעי המחשב המעוניינים בחדשנות ומו\"פ.",
+    "sourceUrl": "https://innovationisrael.org.il/",
+    "tags": ["חדשנות", "הייטק", "מחקר"],
+    "deadline": "2026-12-31"
+  },
+  {
+    "title": "מלגות סטודנטים — משרד החינוך",
+    "description": "מדריך ממשלתי למלגות וסיוע לסטודנטים (כולל מצטיינים, פריפריה ועוד). נקודת מוצא טובה לבדיקת זכאות לפני הגשה.",
+    "sourceUrl": "https://www.gov.il/he/departments/guides/scholarships_for_excelling_students",
+    "tags": ["ממשלתי", "מצטיינים", "סטודנטים"],
+    "eligibilityRules": { "note": "בדקו קריטריונים ספציפיים בדף הממשלתי" }
+  },
+  {
+    "title": "מלגות IEEE Israel",
+    "description": "ענף ישראל של IEEE מעניק מלגות לסטודנטים להנדסת חשמל, מחשבים ותחומים קרובים. פרטים וטפסים באתר הענף.",
+    "sourceUrl": "https://www.ieee.org.il/",
+    "tags": ["IEEE", "הנדסת חשמל", "הנדסה"],
+    "deadline": "2026-11-30"
+  },
+  {
+    "title": "מלגות לסטודנטים — הטכניון",
+    "description": "מגוון מלגות פנימיות לסטודנטי הטכניון (מצטיינים, מחקר, סיוע). רלוונטי לסטודנטי הנדסה ומדעי המחשב בטכניון.",
+    "sourceUrl": "https://students.technion.ac.il/he/scholarships/",
+    "tags": ["טכניון", "הנדסה", "מצטיינים"],
+    "eligibilityRules": { "institution": "technion" }
+  }
+]

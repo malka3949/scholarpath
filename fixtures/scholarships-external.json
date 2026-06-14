@@ -1,0 +1,21 @@
+[
+  {
+    "title": "מלגת חיצונית לדוגמה א",
+    "description": "מלגה לסטודנטים להנדסת תוכנה עם ממוצע גבוה מ-85",
+    "sourceUrl": "https://example.org/scholarships/external-a",
+    "tags": ["הנדסה", "מצטיינים"],
+    "deadline": "2026-12-31"
+  },
+  {
+    "title": "מלגת חיצונית לדוגמה ב",
+    "description": "מלגה לסטודנטים בשנה ג ומעלה בתחומי STEM",
+    "sourceUrl": "https://example.org/scholarships/external-b",
+    "tags": ["STEM"],
+    "eligibilityRules": { "minYear": 3 }
+  },
+  {
+    "title": "מלגת חיצונית ללא URL",
+    "description": "מלגה לבדיקת יצירה בלבד ללא sourceUrl",
+    "tags": ["בדיקה"]
+  }
+]

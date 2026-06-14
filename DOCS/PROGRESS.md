@@ -1,9 +1,30 @@
 # ScholarPath — Progress
 
-**Current phase:** 8 — Action Engine v3 Alignment (complete)  
-**Team Yuri pointer:** `team-Yuri/PHASE.md` → `PHASE=8`  
+**Current phase:** 9 — External Integration Layer (complete)  
+**Team Yuri pointer:** `team-Yuri/PHASE.md` → `PHASE=9`  
 **Last updated:** 2026-06-09  
-**Next:** Phase 9 — External Integration Layer (backlog). See `team-Yuri/plan.md`.
+**Next:** Phase 10+ — see `team-Yuri/plan.md`.
+
+---
+
+## Phase 9 — External Integration Layer (complete)
+
+### Backend
+- [x] Migration `20260611120000_ingestion_jobs` — `IngestionJob`, enums
+- [x] Import upsert by normalized `sourceUrl`; job audit on every import/fetch
+- [x] `IngestionAllowlistService` + `IngestionFetchService` (HTTPS + dev `file://`)
+- [x] `GET /admin/ingestion/jobs`, `GET /admin/ingestion/jobs/:id`
+- [x] `POST /admin/ingestion/fetch` with 60s admin cooldown
+- [x] `IngestionSyncService` — batch recommendation refresh (no ActionService in ingestion)
+- [x] Optional `IngestionSyncScheduler` when `CRON_INGESTION_SYNC` set
+
+### Frontend
+- [x] `/admin` — enhanced import counts, external fetch form, job history (Hebrew)
+
+### Verification
+- [x] Jest: `npm run test -w @scholarpath/api` (61 tests PASS)
+- [x] `team-Yuri/dev-phase9.md` evidence
+- [x] `fixtures/scholarships-external.json` + `.env.example` documented
 
 ---
 
